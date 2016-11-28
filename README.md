@@ -38,7 +38,7 @@ You can stop the above after 1000 steps or so just to see everything is working.
 
 ### Now time to see the machine is steering a car
 ```
-python python run_dataset.py
+python run_dataset.py
 ```
 
 Have fun. Thanks to [Sully Chen](https://github.com/SullyChen) for making the code public. I just put together the setup instructions that worked for me.
