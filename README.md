@@ -12,11 +12,11 @@ To make sure GUI is working from docker you can follow the steps mentioned in [D
 ### Setup Sully Chen's Nvidia Autopliot code and data
 
 Create a shared folder to be used inside docker and download the code and data there.
-> mkdir ~/sharefolder
-cd ~/sharefolder
-git clone https://github.com/SullyChen/Autopilot-TensorFlow.git
-cd Nvidia-Autopilot-TensorFlow
-Download and unzip the [driving_dataset](https://drive.google.com/file/d/0B-KJCaaF7ellQUkzdkpsQkloenM/view)
+- mkdir ~/sharefolder
+- cd ~/sharefolder
+- git clone https://github.com/SullyChen/Autopilot-TensorFlow.git
+- cd Nvidia-Autopilot-TensorFlow
+- Download and unzip the [driving_dataset](https://drive.google.com/file/d/0B-KJCaaF7ellQUkzdkpsQkloenM/view)
 
 ### Build the docker image
 ```
