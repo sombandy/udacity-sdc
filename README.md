@@ -1,11 +1,16 @@
 # Baseline setup for Udacity SDC Challenge 2
 
-### Install XQuartz on MAC
+### Prerequisites
+- MAC OSX (Not tested but should work on Linux as well)
+- Docker installed and running
 
+### Install XQuartz on MAC
+This step is not necessary for Linux machines
 ```
 brew cask install xquartz
 ```
-Or install from https://www.xquartz.org/
+Or install from https://www.xquartz.org/.
+
 To make sure GUI is working from docker you can follow the steps mentioned in [Docker for Mac and GUI applications](https://fredrikaverpil.github.io/2016/07/31/docker-for-mac-and-gui-applications/)
 
 
@@ -15,7 +20,7 @@ Create a shared folder to be used inside docker and download the code and data t
 - mkdir ~/sharefolder
 - cd ~/sharefolder
 - git clone https://github.com/SullyChen/Autopilot-TensorFlow.git
-- cd Nvidia-Autopilot-TensorFlow
+- cd Autopilot-TensorFlow
 - Download and unzip the [driving_dataset](https://drive.google.com/file/d/0B-KJCaaF7ellQUkzdkpsQkloenM/view)
 
 ### Build the docker image
@@ -31,7 +36,7 @@ Create a shared folder to be used inside docker and download the code and data t
 ### Train the model
 ```
 # Inside the docker
-cd /sharefolder/Nvidia-Autopilot-TensorFlow
+cd /sharefolder/Autopilot-TensorFlow
 python train.py
 ```
 You can stop the above after 1000 steps or so just to see everything is working.
