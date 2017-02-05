@@ -1,5 +1,6 @@
 import argparse
 import base64
+import cv2
 import json
 
 import numpy as np
@@ -35,7 +36,8 @@ def normalize_image(img):
 
 def preprocess_image(img):
     img_crop = img[56:150, :, :]
-    img_normed = normalize_image(img_crop)
+    img_resize = cv2.resize(img_crop, (200, 66))
+    img_normed = normalize_image(img_resize)
     return img_normed
 
 @sio.on('telemetry')
@@ -56,7 +58,13 @@ def telemetry(sid, data):
     # This model currently assumes that the features of the model are just the images. Feel free to change this.
     steering_angle = float(model.predict(transformed_image_array, batch_size=1))
     # The driving model currently just outputs a constant throttle. Feel free to edit this.
-    throttle = 0.2
+
+    # throttle = 0.2
+    if np.float32(speed) < 30:
+        throttle = 0.5
+    else:
+        throttle = 0.0
+
     print(steering_angle, throttle)
     send_control(steering_angle, throttle)
 
