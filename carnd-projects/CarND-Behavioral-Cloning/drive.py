@@ -4,6 +4,7 @@ import cv2
 import json
 
 import numpy as np
+import preprocess
 import socketio
 import eventlet
 import eventlet.wsgi
@@ -26,20 +27,6 @@ app = Flask(__name__)
 model = None
 prev_image_array = None
 
-def normalize_image(img):
-    means = np.mean(img, axis=(0, 1))
-    means = means[None,:]
-
-    std = np.std(img, axis=(0, 1))
-    std = std[None,:]
-    return (img - means) / std
-
-def preprocess_image(img):
-    img_crop = img[56:150, :, :]
-    img_resize = cv2.resize(img_crop, (200, 66))
-    img_normed = normalize_image(img_resize)
-    return img_normed
-
 @sio.on('telemetry')
 def telemetry(sid, data):
     # The current steering angle of the car
@@ -52,7 +39,7 @@ def telemetry(sid, data):
     imgString = data["image"]
     image = Image.open(BytesIO(base64.b64decode(imgString)))
     image_array = np.asarray(image)
-    image_array = preprocess_image(image_array)
+    image_array = preprocess.preprocess_image(image_array)
 
     transformed_image_array = image_array[None, :, :, :]
     # This model currently assumes that the features of the model are just the images. Feel free to change this.
