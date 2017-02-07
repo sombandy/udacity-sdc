@@ -46,7 +46,7 @@ def telemetry(sid, data):
     steering_angle = float(model.predict(transformed_image_array, batch_size=1))
     # The driving model currently just outputs a constant throttle. Feel free to edit this.
 
-    # throttle = 0.2
+#    throttle = 0.2
     if np.float32(speed) < 30:
         throttle = 0.5
     else:

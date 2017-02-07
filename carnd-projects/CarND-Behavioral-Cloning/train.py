@@ -16,18 +16,38 @@ import random
 import time
 
 class DataHelper:
-    def __init__(self, data_file):
+    def __init__(self, config):
         xs = []
         ys = []
 
+        scale_large = 1.1
+        scale_short = 0.9
+
+        data_file = config["data_file"]
         with open(data_file) as f:
             header = f.readline()
             dirname = os.path.dirname(data_file)
             for line in f:
                 fields = line.split(", ")
-                # Loading only the center images
+                l_angle = r_angle = angle = np.float32(fields[3])
+
+                if angle > 1e-5:  # right turn
+                    l_angle = scale_large * angle
+                    r_angle = scale_short * angle
+
+                if angle < -1e-5: # left turn
+                    l_angle = scale_short * angle
+                    r_angle = scale_large * angle
+
+                ys.append(angle)
                 xs.append(os.path.join(dirname, fields[0]))
-                ys.append(np.float32(fields[3]))
+
+                if config.get("use_side_cameras", False):
+                    ys.append(l_angle)
+                    xs.append(os.path.join(dirname, fields[1]))
+
+                    ys.append(r_angle)
+                    xs.append(os.path.join(dirname, fields[2]))
 
         c = list(zip(xs, ys))
         random.shuffle(c)
@@ -72,7 +92,7 @@ class DataHelper:
         return np.asarray(x_out), np.asarray(y_out)
 
 def train(config):
-    dh = DataHelper(config['data_file'])
+    dh = DataHelper(config)
     data_size = dh.data_size()
     val_x, val_y = dh.val_data()
 
@@ -85,7 +105,13 @@ def train(config):
     step_start = time.time()
     num_steps = epochs * data_size // batch_size
 
-    model = models.nvidia_end2end()
+    if "init_model" in config:
+        print("initializing from an existing model")
+        model = keras.models.load_model(config["init_model"])
+    else:
+        print("Creating a new model")
+        model = models.nvidia_end2end()
+
     print(model.summary())
 
     print("Training for %d steps" % num_steps)
@@ -102,15 +128,16 @@ def train(config):
             detailed_loss(model, val_x, val_y, "Validation")
 
             step_start = time.time()
-            model.save(config["model_file"])
+            model.save(config["output_model"])
 
-    model.save(config["model_file"])
+    model.save(config["output_model"])
     sample_output(model, val_x, val_y)
+    detailed_loss(model, val_x, val_y, "Final Validation")
 
 def detailed_loss(model, x, y, dataname):
     fwd_idx = (y >= -1e-6) & (y <= 1e-6)
-    left_idx = y < -1e-6
-    right_idx = y > 1e-6
+    left_idx = y < -0.001
+    right_idx = y > 0.001
 
     overall = model.evaluate(x, y, verbose=0)
     forward = model.evaluate(x[fwd_idx, ], y[fwd_idx], verbose=0)
