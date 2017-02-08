@@ -7,7 +7,6 @@ import datetime
 import json
 import keras
 import matplotlib.pylab as plt
-import models
 import numpy as np
 import os
 import preprocess
@@ -15,13 +14,42 @@ import sys
 import random
 import time
 
+from keras.layers.core import Dense, Flatten, Dropout
+from keras.layers.convolutional import Convolution2D
+from keras.models import Sequential
+from keras.optimizers import Adam
+
+def nvidia_end2end(learning_rate=0.0001, dropout=0.5):
+    model = Sequential()
+
+    model.add(Convolution2D(24, 5, 5, subsample=(2, 2), input_shape=(66, 200, 3),
+                            activation='relu'))
+    model.add(Convolution2D(36, 5, 5, subsample=(2, 2), activation='relu'))
+    model.add(Convolution2D(48, 5, 5, subsample=(2, 2), activation='relu'))
+
+    model.add(Convolution2D(64, 3, 3, activation='relu'))
+    model.add(Convolution2D(64, 3, 3, activation='relu'))
+
+    model.add(Flatten())
+    model.add(Dropout(dropout))
+    model.add(Dense(1164, activation='relu'))
+    model.add(Dropout(dropout))
+    model.add(Dense(100, activation='relu'))
+    model.add(Dropout(dropout))
+    model.add(Dense(50, activation='relu'))
+    model.add(Dense(10, activation='relu'))
+    model.add(Dense(1, activation='tanh'))
+
+    opt = Adam(lr=learning_rate)
+    model.compile(optimizer=opt, loss='mean_squared_error')
+
+    return model
+
 class DataHelper:
     def __init__(self, config):
         xs = []
         ys = []
-
-        scale_large = 1.1
-        scale_short = 0.9
+        cams = []
 
         data_file = config["data_file"]
         with open(data_file) as f:
@@ -31,44 +59,45 @@ class DataHelper:
                 fields = line.split(", ")
                 l_angle = r_angle = angle = np.float32(fields[3])
 
-                if angle > 1e-5:  # right turn
-                    l_angle = scale_large * angle
-                    r_angle = scale_short * angle
-
-                if angle < -1e-5: # left turn
-                    l_angle = scale_short * angle
-                    r_angle = scale_large * angle
-
+                cams.append(0)
                 ys.append(angle)
                 xs.append(os.path.join(dirname, fields[0]))
 
                 if config.get("use_side_cameras", False):
-                    ys.append(l_angle)
+                    shift_angle = 0.25
+                    cams.append(1)
+                    ys.append(l_angle + shift_angle)
                     xs.append(os.path.join(dirname, fields[1]))
 
-                    ys.append(r_angle)
+                    cams.append(2)
+                    ys.append(r_angle - shift_angle)
                     xs.append(os.path.join(dirname, fields[2]))
 
-        c = list(zip(xs, ys))
+        c = list(zip(xs, ys, cams))
         random.shuffle(c)
-        xs, ys = zip(*c)
+        xs, ys, cams = zip(*c)
 
         self._batch_pointer = 0
-        self._train_xs = xs[:(int)(len(xs) * 0.9)]
-        self._train_ys = ys[:(int)(len(xs) * 0.9)]
+        val_frac = config.get("validation_fraction", 0.1)
+        self._train_xs = xs[:(int)(len(xs) * (1 - val_frac))]
+        self._train_ys = ys[:(int)(len(xs) * (1 - val_frac))]
 
         val_xs = []
         val_ys = []
-        val_size = (int)(len(xs) * 0.1)
+        val_size = (int)(len(xs) * val_frac)
         for i in range(val_size):
-            img = plt.imread(xs[-i])
-            img_pre = preprocess.preprocess_image(img)
+            if cams[-i] == 0: # use only center images for validation
+                img = plt.imread(xs[-i])
+                img_pre = preprocess.preprocess_image(img)
 
-            val_xs.append(img_pre)
-            val_ys.append(ys[-i])
+                val_xs.append(img_pre)
+                val_ys.append(ys[-i])
 
         self._val_xs = np.asarray(val_xs)
         self._val_ys = np.asarray(val_ys)
+
+        print("Data loaded. Train {} Validation {}".format(
+            len(self._train_xs), len(self._val_xs)))
 
     def data_size(self):
         return len(self._train_ys) + len(self._val_ys)
@@ -96,7 +125,7 @@ def train(config):
     data_size = dh.data_size()
     val_x, val_y = dh.val_data()
 
-    print("Number of training data", data_size, ". data shape", val_x.shape)
+    print("data shape", val_x.shape)
 
     epochs = config["epochs"]
     batch_size = config["batch_size"]
@@ -110,7 +139,7 @@ def train(config):
         model = keras.models.load_model(config["init_model"])
     else:
         print("Creating a new model")
-        model = models.nvidia_end2end()
+        model = nvidia_end2end()
 
     print(model.summary())
 
