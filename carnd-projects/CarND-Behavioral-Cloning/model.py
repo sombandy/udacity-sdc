@@ -66,11 +66,19 @@ class DataHelper:
                 if config.get("use_side_cameras", False):
                     shift_angle = 0.25
                     cams.append(1)
-                    ys.append(l_angle + shift_angle)
+
+                    if angle < 0.0 and angle >= shift_angle:
+                        ys.append(0.0)
+                    else:
+                        ys.append(l_angle + shift_angle)
                     xs.append(os.path.join(dirname, fields[1]))
 
                     cams.append(2)
-                    ys.append(r_angle - shift_angle)
+                    if angle > 0.0 and angle <= shift_angle:
+                        ys.append(r_angle)
+                    else:
+                        ys.append(r_angle - shift_angle)
+
                     xs.append(os.path.join(dirname, fields[2]))
 
         c = list(zip(xs, ys, cams))
@@ -162,6 +170,7 @@ def train(config):
     model.save(config["output_model"])
     sample_output(model, val_x, val_y)
     detailed_loss(model, val_x, val_y, "Final Validation")
+    keras.backend.clear_session()
 
 def detailed_loss(model, x, y, dataname):
     fwd_idx = (y >= -1e-6) & (y <= 1e-6)
