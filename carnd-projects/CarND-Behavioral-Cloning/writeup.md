@@ -10,7 +10,7 @@ The goals / steps of this project are the following:
 We kept 2 additional goals
 1. Test that the model successfully drives around track2 without leaving the road
 2. Train the model only using track1 data. Never show the model data of track2. Yet the car should be able to successfully drive around track2
-2. The car should be able to drive up to decent length in presence of shadow as well. Driving around in track2 in presence of shadow is *not* a goal
+
 
 ### Files Submitted & Code Quality
 #### 1. Submission includes all required files and can be used to run the simulator in autonomous mode
@@ -22,15 +22,15 @@ My project includes the following files:
 2. [preprocess.py](./preprocess.py) to preprocess the images before feeding those into the network
 3. [drive.py](./drive.py) for driving the car in autonomous mode
 4. [model.h5](./model.h5) is a trained keras model of convolution neural network that can drive the car in track1 as well as track2
-5. [REDME.md](./README.md) is the write up summarizing the approach and the results
+5. [writeup.md](./writeup.md) is the write up summarizing the approach and the results
 
-#### 2. Submssion includes functional code
+#### 2. Submission includes functional code
 Using the Udacity provided simulator and my drive.py file, the car can be driven autonomously around the track1 and track2 by executing
 ```
 python drive.py model.h5
 ```
 
-#### 3. Submssion code is usable and readable
+#### 3. Submission code is usable and readable
 The [model.py](./model.py) file contains the code for training and saving the convolution neural network. The file shows the pipeline I used for training and validating the model.
 
 The [preprocess.py](./preprocess.py) file contains the preprocessing code applied to an image before feeding the image into the network.
@@ -38,7 +38,7 @@ The [preprocess.py](./preprocess.py) file contains the preprocessing code applie
 ### Model Architecture and Training Strategy
 
 
-#### 1. An appropriate model arcthiecture has been employed
+#### 1. An appropriate model architecture has been employed
 I have used the same model used in [Nvidia's End To End driving](https://arxiv.org/pdf/1604.07316.pdf). The model takes a *200 x 66* image and predicts the desired steering angle of the car.
 
 The model layers and parameters are as follows
@@ -69,7 +69,7 @@ Since we are using tanh activation the output is restricted between -1 to +1.
 3. Fully Connected 2
 Through out dropout probablity was set to 0.5
 
-**Image Augmentation** To reduce the effect of overfitting we increase the number of training data point. Particularly in include some noisy training data, e.g. angle shifted images taken from left and right cameras.
+**Image Augmentation** To reduce the effect of overfitting we increase the number of training data point. Particularly include some noisy training data, e.g. angle shifted images taken from left and right cameras.
 
 #### 4. Appropriate training data
 
@@ -102,19 +102,26 @@ An example image of this training dataset from all three; left, center and right
 The histogram of the steering angles for this dataset is shown below.
 ![](report_images/sharp_turn_angle_hist.png)
 
-Compare this with the histogram of the steering angle for the Udacity dataset. In this dataset almost 50% of the data points have close to -1.0 or 1.0 steering angles.
+Total number of data points in this dataset is **738**
+
+Compare this with the histogram of the steering angle for the Udacity dataset. In this dataset, almost 50% of the data points have close to -1.0 or 1.0 steering angles.
+
+#### Train Validation Split
+Through out this project will use 90% - 10% split of the dataset and use the 90% split to train the model and 10% as the validation set. The validation set will be used to detect overfitting and tune parameters like the number of Epochs for training etc.
+
+The real testing is done on the actual simulator based on whether or not the car is able to drive around in the given track.
 
 ###  Architecture and Training Documentation
 #### 1. Solution Design Approach
-As mentioned at the beginning that we have 2 major goals for our solution
-	1. Make sure the car is able to drive in track2 while it is trained using the data of track1 only
-	2. The car should be able to drive around in presence of shadow as well
-
-We will explore following solutions in sequence
+As mentioned at the beginning that we have following goals for the trained model
+	1. The model should be able to successfully drive around the car in track1
+	2. The model should be able to successfully drive around the car in track2
+	3. The model is trained only using the track1 data but it should be able to generalize to track2
+	
+We will explore following solutions in sequence to achieve our goal
 	1. **baseline** trained only on the center images of the Udacity data
 	2. **Image Normalization** Same as baseline, but the images will be cropped and normalized
 	3. **Augment Left/Right Images** Left/Right images are augmented after shifting the angle
-	4. **Include More Training Data**
-	5.	**Introduce Shadow and other preprocessing of the images**
-	6.
+	4. **Include Sharp Turn Data** In addition to the udacity data we will use the sharp turn dataset that we have created.
+
 #### 2. Final Model Architecture
