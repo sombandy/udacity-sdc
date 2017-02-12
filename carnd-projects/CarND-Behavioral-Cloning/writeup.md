@@ -8,6 +8,7 @@ The goals / steps of this project are the following:
 - Summarize the results with a written report
 
 We kept 2 additional goals
+
 1. Test that the model successfully drives around track2 without leaving the road
 2. Train the model only using track1 data. Never show the model data of track2. Yet the car should be able to successfully drive around track2
 
@@ -17,11 +18,11 @@ We kept 2 additional goals
 
 My project includes the following files:
 
-
 1. [model.py](./mode.py) is the script to create and train the model
 2. [preprocess.py](./preprocess.py) to preprocess the images before feeding those into the network
 3. [drive.py](./drive.py) for driving the car in autonomous mode
 4. [model.h5](./model.h5) is a trained keras model of convolution neural network that can drive the car in track1 as well as track2
+	5. Note that we have tested model.h5 on a MacBook Pro with 2.8Ghz Intel core i7 processor. We are able to run the car at max speed 30mph. To make it work on a slower machine one might have to reduce the speed by putting lower value for throttle.
 5. [writeup.md](./writeup.md) is the write up summarizing the approach and the results
 
 #### 2. Submission includes functional code
@@ -140,17 +141,18 @@ We will use the following parameter configuration for all the experiements
 	- Learning Rate = 0.0001
 
 **Loss**
+
 ![](report_images/baseline_loss.png)
 
 **Observations**
-	- Loss does not decrease over iterations. We have not normalized the image pixels. The pixel values range from 0 to 255. So the input to the network is actually quite high value integers. The *tanh* output will be close to -1.0 or 1.0 where the derivative is close to zero. So in each iterations the parameters will be changed by a very small amount. That's why we see a very slow convergence.
-	- The loss is quite high. Particularly, the training loss is close to 0.010 after 30 epochs. We will soon see 4x reduction in training loss.
+	- The loss is decreasing very slowly. This is because the pixel values of the input image ranges between 0 and 255. The activation of the final layer is *tanh*. High values of input makes the output to stay close to -1.0 or 1.0 where the derivative is close to zero. So at each iterations the parameters are updated with small changes. Therefore the convergence is slow.
+	- Training loss is fluctuating a lot. The model is very unstable. Possibly the output values are just toggling between -1.0 and 1.0.
 
 **Final Result** 
 	- The car goes out of the road within few seconds of driving. It is not able to take any turn.
  
 #### 2. Image Normalization
- In this experiment, we will crop the image and apply normalization
+ In this experiment, we aim to address the problem of high input values by scaling the inputs. In particular, we apply image normalization to scale the pixel values. We also include image cropping to remove the portion of the image that is not useful in taking driving decision.
  
 **Training Data** Same as above
 
@@ -161,7 +163,7 @@ img_crop = img[56:150, :, :]
 ```
 The picture below shows the original and the cropped images.
 ![](report_images/cropping.png)
-2. Normalization: We apply per-channel normalization by subtracting the mean and dividing by standard deviation of each channel. This will make most pixel values in the range of 0 and 1, addressing the problem of large input values we saw in case of baseline.
+2. Normalization: We apply per-channel normalization by subtracting the mean and dividing by standard deviation of each channel. This will make most pixel values in the range of -1.0 to 1.0, addressing the problem of large input values we saw in case of baseline.
 ```
 def normalize_image(img):
     means = np.mean(img, axis=(0, 1))
@@ -172,15 +174,84 @@ def normalize_image(img):
 ```
 
 **Loss**
+
 ![](report_images/normalize_loss.png)
 
 **Observations**
-	- Loss decreases much faster than Baseline. Within 5 epochs the validation loss is below 0.010
-	- The validation loss starts increasing after epochs 16-17 but the training loss continues to decrease. This is a clear sign of **overfitting**
+	- Loss decreases much faster than Baseline. 
+	- Loss is lower than baseline, we achieved lower than 0.010 validation loss.
+	- The validation loss starts increasing after epochs 16-17 but the training loss continues to decrease. So the model is overfitting the training data.
 
 **Final Results**
 	- The care has now learnt to take few truns
 	- It is able to cross the bridge in the track1 and after that it goes off the road
 	- Overall a very good progress from baseline
 
+#### 3. Use Left/Right Images
+In the above experiment, we faced the problem of overfitting. One way to address the problem of overfitting is by including more training data. Particularly inclusion of lots of noisy data in the training set helps in reducing the effect of overfitting.
+
+**Training Data**
+When recording training data, the images are captured using 3 cameras, left, center and right. Udacity Data also comes with left, center and right images. During actual driving in the simulator images only from the center camera is available. But we can train the model using images from all 3 cameras even though during actual driving images from only the center camera will be used. In fact, since left and right images looks different than the center images they are perfectly suited as noisy training examples to reduce the effect of overfitting.
+
+Directly using the left and right images as training data is not a good idea since the model will be trained mostly on different type of images than what it will see during actual driving. We shift the steering angle by +0.25 for the left images and by -0.25 for the right images. The idea is that we shift the steering angle for left and right images so that the center camera sees the same image as seen by the corresponding left or right camera. For example, we assume when the car is turned additional +0.25 radian towards right it will see the same image as seen by the left camera in the current position.
+
+After the image augmentation we literally triple our dataset. Earlier in the training set we had 7232 data points. After augmenting left/right images the training set contains 21K images. Note that there is no change in the validation set as we continue to use only the center images in the validation set.
+
+**Preprocessing**
+Same as above
+
+**Loss**
+
+loss at 30 epochs
+![](left_right_image_loss.png)
+
+loss at 50 epochs
+![](left_right_image_loss2.png)
+
+**Observation**
+	- We achieved lower validation loss than what we achieved earlier. The validation loss is lower than 0.010 now
+	- Validation loss is more stable and the impact of overfitting is less noticeable. 
+	- Validation loss still slightly increased from epoch 10 to 30. So there is still some overfitting
+
+**Final Result**
+- The car is now able to successfully drive around track1. The full video is uploaded in the youtube and can be played by clicking on the following image.
+[![](https://img.youtube.com/vi/Ch1ymTUpRhk/0.jpg)](https://youtu.be/Ch1ymTUpRhk)
+
+- It still fails to drive around in the track2. The car hits the side rock on a sharp turn. Next we will train the car to learn to take sharp turns.
+
+#### 3. Include Sharp Turn Images
+As mentioned above the car is able to successfully drive around track1 but fails to take sharp turns in track2. We have shown earlier that the udacity data heavily skewed towards zero steering angle. That's why we have created the sharp turn data which shows examples of quickly moving the car away from the curb or side rocks. Next we will train the model including this sharp turn data.
+
+**Training Data**
+	- Udacity Data and Sharp Turn Data combined
+	- Total number of data points 8037 + 738 = 8775
+	- After Train and Validation split, training set contains 23689 data points and the validation set contains 893 data points
+
+**Preprocessing**
+Same as above
+
+**Loss**
+
+Loss at 50 epochs
+![](report_images/sharp_turn_loss.png)
+
+Loss at 70 epochs
+![](report_images/sharp_turn_loss2.png)
+
+**Observations**
+	- The sign of overfitting is not obvious. We can train the model for large number of iterations (typically 50 to 70 epochs). Higher number of iteration generates more stable model that does not vary between different runs.
+	- Validation loss is higher, this due to the fact we have included many high steering angle data in the validation 
+
+**Final Results**
+	- The model is able to successfully drive around the track1
+	- The model is able to successfully drive around the track2. We have uploaded the track2 video on youtube and can be played by clicking on the image below.
+[![](https://img.youtube.com/vi/odYl6ilQ3Kc/0.jpg)](https://youtu.be/odYl6ilQ3Kc)
+	- The model is trained using the track1 data. It has never seen the data of track2 yet it is able to drive around track2
+
 #### 2. Final Model Architecture
+- The convolution network as shown in the model architecture section
+- The model is trained on udacity data + sharp turn data
+- Images were cropped and per-channel image normalization was applied
+- Images from the left and right cameras were used after angle shift
+- The batch size, optimizer and learning rates are kept same through out as mentioned above 
+- The model was trained for 70 epochs
