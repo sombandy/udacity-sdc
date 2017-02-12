@@ -2,12 +2,12 @@
 The goals / steps of this project are the following:
 
 - Use the simulator to collect data of good driving behavior
-- Build, a convolution neural network in Keras that predicts steering angles from images
+- Build a convolution neural network in Keras that predicts steering angles from images
 - Train and validate the model with a training and validation set
-- Test that the model successfully drives around track one without leaving the road
+- Test that the model successfully drives around track1 without leaving the road
 - Summarize the results with a written report
 
-We kept 2 additional goals
+We kept 2 additional goals for ourselves 
 
 1. Test that the model successfully drives around track2 without leaving the road
 2. Train the model only using track1 data. Never show the model data of track2. Yet the car should be able to successfully drive around track2
@@ -22,7 +22,7 @@ My project includes the following files:
 2. [preprocess.py](./preprocess.py) to preprocess the images before feeding those into the network
 3. [drive.py](./drive.py) for driving the car in autonomous mode
 4. [model.h5](./model.h5) is a trained keras model of convolution neural network that can drive the car in track1 as well as track2
-	5. Note that we have tested model.h5 on a MacBook Pro with 2.8Ghz Intel core i7 processor. We are able to run the car at max speed 30mph. To make it work on a slower machine one might have to reduce the speed by putting smaller value for throttle.
+	- Note that we have tested model.h5 on a MacBook Pro with 2.8Ghz Intel core i7 processor and when no other program is running. We are able to run the car at max speed 30mph. To make it work on a slower machine one might have to reduce the speed by putting smaller value for throttle. Original [drive.py](https://github.com/udacity/CarND-Behavioral-Cloning-P3/blob/master/drive.py) provided by udacity drives the car at 10mph. That could be one workable option on slower machines.
 5. [writeup.md](./writeup.md) is the write up summarizing the approach and the results
 
 #### 2. Submission includes functional code
@@ -64,15 +64,15 @@ Total number of parameters = 1,595,511
 Since we are using tanh activation the output is restricted between -1 to +1.
 
 #### 2. Attempts to reduce overfitting in the model
-**Dropout**  To reduce overfitting applied dropout after the following layers
+**Dropout**  To reduce overfitting we applied dropout after the following layers
 
 1. Flatten
 2. Fully Connected 1
 3. Fully Connected 2
 
-Through out dropout probability was set to 0.5
+Through out this project dropout probability was set to 0.5
 
-**Image Augmentation** To reduce the effect of overfitting we increase the number of training data point. Particularly include some noisy training data, e.g. angle shifted images taken from left and right cameras.
+**Image Augmentation** To reduce the effect of overfitting we increase the number of training data points. Particularly include some noisy training data, e.g. angle shifted images taken from left and right cameras.
 
 #### 4. Appropriate training data
 
@@ -90,7 +90,7 @@ Total | 8037 | 100%
 The histogram of the steering angles are shown in the figure below
 ![](report_images/udacity_data_angle_hist.png)
 
-We can see that the Udacity data is heavily skewed towards driving straight at steering angle close to 0.0. This is good enough for track1. But to drive around in the track2 the car needs to take some sharp turns. Udacity data is not enough to train the model in taking sharp turns. 
+We can see that the Udacity data is heavily skewed towards driving straight at steering angle close to 0.0. This is good enough for track1. But to drive around in the track2, the car needs to take some sharp turns. Udacity data is not enough to train the model in taking sharp turns. 
 
 #### Sharp Turn Data
 To train the model to take sharp turns we created some sharp turn data. In particular, we recorded some dataset where the car is *driving away* from the curb or fence. We positioned the car very close to a curb or a fence and then start recording while it takes sharp turn to drive away from the curb/fence. Note that as mentioned in the goals we created this dataset from track1 only.
@@ -214,10 +214,12 @@ Same as above
 **Loss**
 
 loss at 30 epochs
-![](left_right_image_loss.png)
+
+![](report_images/left_right_image_loss.png)
 
 loss at 50 epochs
-![](left_right_image_loss2.png)
+
+![](report_images/left_right_image_loss2.png)
 
 **Observation**
 
