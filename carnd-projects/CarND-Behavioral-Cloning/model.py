@@ -66,19 +66,11 @@ class DataHelper:
                 if config.get("use_side_cameras", False):
                     shift_angle = 0.25
                     cams.append(1)
-
-                    if angle < 0.0 and angle >= shift_angle:
-                        ys.append(0.0)
-                    else:
-                        ys.append(l_angle + shift_angle)
+                    ys.append(l_angle + shift_angle)
                     xs.append(os.path.join(dirname, fields[1]))
 
                     cams.append(2)
-                    if angle > 0.0 and angle <= shift_angle:
-                        ys.append(r_angle)
-                    else:
-                        ys.append(r_angle - shift_angle)
-
+                    ys.append(r_angle - shift_angle)
                     xs.append(os.path.join(dirname, fields[2]))
 
         c = list(zip(xs, ys, cams))
