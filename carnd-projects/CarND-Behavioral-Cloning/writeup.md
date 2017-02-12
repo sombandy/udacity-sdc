@@ -73,7 +73,7 @@ Through out dropout probablity was set to 0.5
 
 #### 4. Appropriate training data
 
-##### Udacity Sample Training Data
+##### Udacity Data
 Udacity provided [sample training data](https://d17h27t6h515a5.cloudfront.net/topher/2016/December/584f6edd_data/data.zip) for track1. We will use the Udacity data as the main source of our training and validation data.
 
 ##### Quick summary of the Udacity data
@@ -107,9 +107,9 @@ Total number of data points in this dataset is **738**
 Compare this with the histogram of the steering angle for the Udacity dataset. In this dataset, almost 50% of the data points have close to -1.0 or 1.0 steering angles.
 
 #### Train Validation Split
-Through out this project will use 90% - 10% split of the dataset and use the 90% split to train the model and 10% as the validation set. The validation set will be used to detect overfitting and tune parameters like the number of Epochs for training etc.
-
-The real testing is done on the actual simulator based on whether or not the car is able to drive around in the given track.
+Through out this project will use 90% - 10% split of the dataset and use the 90% split to train the model and 10% as the validation set. We only keep the center images in the validation set even when we augment the left and right images in the training set.
+The validation set will be used to detect overfitting and tune parameters like the number of Epochs for training etc.
+The final testing is done on the actual simulator based on whether or not the car is able to drive around in a given track.
 
 ###  Architecture and Training Documentation
 #### 1. Solution Design Approach
@@ -118,10 +118,69 @@ As mentioned at the beginning that we have following goals for the trained model
 	2. The model should be able to successfully drive around the car in track2
 	3. The model is trained only using the track1 data but it should be able to generalize to track2
 	
-We will explore following solutions in sequence to achieve our goal
-	1. **baseline** trained only on the center images of the Udacity data
+We will explore following solutions in sequence to achieve our goals
+	1. **Baseline** trained only on the center images of the Udacity data
 	2. **Image Normalization** Same as baseline, but the images will be cropped and normalized
 	3. **Augment Left/Right Images** Left/Right images are augmented after shifting the angle
 	4. **Include Sharp Turn Data** In addition to the udacity data we will use the sharp turn dataset that we have created.
+
+#### 1. Baseline
+
+**Training Data**
+	- Only the center images of the udacity training data is used
+	- There 7232 center images in the training set and 803 images in the validation set
+
+**Preprocessing**
+	- The images are resized to *200x66*
+
+**Training Parameters**
+We will use the following parameter configuration for all the experiements
+	- BATCH_SIZE = 64
+	- Optimizer = Adam
+	- Learning Rate = 0.0001
+
+**Loss**
+![](report_images/baseline_loss.png)
+
+**Observations**
+	- Loss does not decrease over iterations. We have not normalized the image pixels. The pixel values range from 0 to 255. So the input to the network is actually quite high value integers. The *tanh* output will be close to -1.0 or 1.0 where the derivative is close to zero. So in each iterations the parameters will be changed by a very small amount. That's why we see a very slow convergence.
+	- The loss is quite high. Particularly, the training loss is close to 0.010 after 30 epochs. We will soon see 4x reduction in training loss.
+
+**Final Result** 
+	- The car goes out of the road within few seconds of driving. It is not able to take any turn.
+ 
+#### 2. Image Normalization
+ In this experiment, we will crop the image and apply normalization
+ 
+**Training Data** Same as above
+
+**Preprocessing**
+	1. Cropping: The upper part of the image shows the sky and trees, not relevant to driving decisions. Few rows at the bottom of the image mostly show the bonnet of the car. So we crop the images from 56 to 150 rows of an image
+```
+img_crop = img[56:150, :, :]
+```
+The picture below shows the original and the cropped images.
+![](report_images/cropping.png)
+2. Normalization: We apply per-channel normalization by subtracting the mean and dividing by standard deviation of each channel. This will make most pixel values in the range of 0 and 1, addressing the problem of large input values we saw in case of baseline.
+```
+def normalize_image(img):
+    means = np.mean(img, axis=(0, 1))
+    means = means[None,:]
+    std = np.std(img, axis=(0, 1))
+    std = std[None,:]
+    return (img - means) / std
+```
+
+**Loss**
+![](report_images/normalize_loss.png)
+
+**Observations**
+	- Loss decreases much faster than Baseline. Within 5 epochs the validation loss is below 0.010
+	- The validation loss starts increasing after epochs 16-17 but the training loss continues to decrease. This is a clear sign of **overfitting**
+
+**Final Results**
+	- The care has now learnt to take few truns
+	- It is able to cross the bridge in the track1 and after that it goes off the road
+	- Overall a very good progress from baseline
 
 #### 2. Final Model Architecture
