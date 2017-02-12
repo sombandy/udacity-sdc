@@ -40,7 +40,7 @@ The [preprocess.py](./preprocess.py) file contains the preprocessing code applie
 
 
 #### 1. An appropriate model architecture has been employed
-I have used the same model used in [Nvidia's End To End driving](https://arxiv.org/pdf/1604.07316.pdf). The model takes a *200 x 66* image and predicts the desired steering angle of the car.
+I have used the same model used in [Nvidia's End To End driving](https://arxiv.org/pdf/1604.07316.pdf). The model takes a *66 x 200* image and predicts the desired steering angle of the car.
 
 The model layers and parameters are as follows
 
@@ -135,7 +135,7 @@ We will explore following solutions in sequence to achieve our goals
 
 **Preprocessing**
 
-- The images are resized to *200x66*
+- The images are resized to *66x200*
 
 **Training Parameters**
 
@@ -150,15 +150,16 @@ We will use the above parameter configuration for all our experiments
 ![](report_images/baseline_loss.png)
 
 **Observations**
-	- The loss is decreasing very slowly. This is because the pixel values of the input image ranges between 0 and 255. The activation of the final layer is *tanh*. Large values of input makes the output to stay close to -1.0 or 1.0 where the derivative is close to zero. So at each iterations the parameters are updated with small changes. Therefore the convergence is slow.
-	- Training loss is fluctuating a lot. The model is very unstable. Possibly the output values are just toggling between -1.0 and 1.0.
+
+- The loss is decreasing very slowly. This is because the pixel values of the input image ranges between 0 and 255. The activation of the final layer is *tanh*. Large values of input makes the output to stay close to -1.0 or 1.0 where the derivative is close to zero. So at each iterations the parameters are updated with small changes. Therefore the convergence is slow.
+- Training loss is fluctuating a lot. The model is very unstable. Possibly the output values are just toggling between -1.0 and 1.0.
 
 **Final Result** 
 
 - The car goes out of the road within few seconds of driving. It is not able to take any turn.
  
 #### 2. Image Normalization
- In this experiment, we aim to address the problem of large input values by scaling the inputs. In particular, we apply image normalization to scale the pixel values. We also include image cropping to remove the portion of the image that is not useful in taking driving decision.
+ In this experiment, we aim to address the problem of large input values by scaling the inputs. In particular, we apply image normalization to scale the pixel values. We also include image cropping to remove the portion of the image that is not useful in taking driving decision. Finally we scale the image to size 66x200.
  
 **Training Data** Same as above
 
@@ -194,7 +195,7 @@ def normalize_image(img):
 **Final Results**
 
 - The care has now learnt to take few turns
-- It is able to cross the bridge in the track1 and after that it goes off the road
+- It is able to cross the bridge on the track1 and after that it goes off the road
 - Overall a very good progress from baseline
 
 #### 3. Use Left/Right Images
@@ -202,11 +203,11 @@ In the above experiment, we faced the problem of overfitting. One way to address
 
 **Training Data**
 
-When recording training data, the images are captured using 3 cameras, left, center and right. Udacity Data also comes with left, center and right images. During actual driving in the simulator images only from the center camera is available. But we can train the model using images from all 3 cameras even though actual driving will be done only using the center camera image. In fact, since left and right images looks slightly different than the center image they are perfectly suited as noisy training examples to reduce the effect of overfitting.
+When recording training data, the images are captured using 3 cameras, left, center and right. Udacity Data also comes with left, center and right images. During actual driving in the simulator, only the center camera images are available. But we can train the model using images from all 3 cameras even though actual driving will be done only using the center camera images. In fact, since left and right images looks little bit different than the center image they are perfectly suited as noisy training examples to reduce the effect of overfitting.
 
 Directly using the left and right images as training data is not a good idea as in that case the model will be trained mostly on different types of images than what it will see during actual driving. We shift the steering angle by +0.25 for the left images and by -0.25 for the right images. The idea is that we shift the steering angle for left and right images so that the center camera sees the same image as seen by the corresponding left or right camera. For example, we assume when the car is turned additional +0.25 radian towards right it will see the same image as seen by the left camera in the current position.
 
-After the image augmentation we literally triple our dataset. Earlier in the training set we had 7232 data points. After augmenting left/right images the training set contains 21K images. Note that there is no change in the validation set as we continue to use only the center images in the validation set.
+After the image augmentation we literally triple our dataset. Earlier, in the training set we had 7232 data points. After augmenting left/right images the training set contains 21K images. Note that there is no change in the validation set as we continue to use only the center images in the validation set.
 
 **Preprocessing**
 Same as above
@@ -225,7 +226,7 @@ loss at 50 epochs
 
 - We achieved lower validation loss than what we achieved earlier. The validation loss is lower than 0.010 now
 - Validation loss is more stable and the impact of overfitting is less noticeable. 
-- Validation loss still slightly increased from epoch 10 to 30. So there is still some overfitting going on
+- Validation loss still slightly increased from epoch 15 to 30. So there is still some overfitting going on
 
 **Final Result**
 
@@ -251,15 +252,17 @@ Same as above
 **Loss**
 
 Loss at 50 epochs
+
 ![](report_images/sharp_turn_loss.png)
 
 Loss at 70 epochs
+
 ![](report_images/sharp_turn_loss2.png)
 
 **Observations**
 
 - The sign of overfitting is not obvious. We can train the model for large number of iterations (typically 50 to 70 epochs). More number of iterations generates more stable model that does not greatly vary between different runs.
-- Validation loss is higher what we saw earlier. This due to the fact we have included many high steering angle data in the validation 
+- Validation loss is higher than what we saw earlier. This is due to the fact we have included many large steering angle data in the validation 
 
 **Final Results**
 
